@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Horário">
+<title>Horário de Trabalho</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    background: #0F0F12;
+    color: #F0EFE8;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px;
+    padding-top: env(safe-area-inset-top, 24px);
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+  }
+
+  .app {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .header {
+    text-align: center;
+  }
+
+  .header h1 {
+    font-size: 15px;
+    font-weight: 500;
+    color: #888780;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .time-input-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .time-label {
+    font-size: 13px;
+    color: #888780;
+    letter-spacing: 0.04em;
+  }
+
+  input[type="time"] {
+    background: #1C1C22;
+    border: 1px solid #2E2E38;
+    border-radius: 16px;
+    color: #F0EFE8;
+    font-size: 48px;
+    font-weight: 300;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    letter-spacing: 0.02em;
+    text-align: center;
+    padding: 20px 24px;
+    width: 100%;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  input[type="time"]:focus {
+    border-color: #534AB7;
+  }
+
+  input[type="time"]::-webkit-datetime-edit { color: #F0EFE8; }
+  input[type="time"]::-webkit-datetime-edit-hour-field,
+  input[type="time"]::-webkit-datetime-edit-minute-field { color: #F0EFE8; }
+  input[type="time"]::-webkit-datetime-edit-ampm-field { display: none; }
+
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .result-card {
+    background: #1C1C22;
+    border: 1px solid #2E2E38;
+    border-radius: 20px;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: opacity 0.3s;
+  }
+
+  .result-card.empty {
+    opacity: 0.35;
+  }
+
+  .result-info {}
+
+  .result-type {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .result-desc {
+    font-size: 13px;
+    color: #888780;
+  }
+
+  .result-time {
+    font-size: 36px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  .card-normal .result-type { color: #5DCAA5; }
+  .card-normal .result-time { color: #9FE1CB; }
+
+  .card-max .result-type { color: #EF9F27; }
+  .card-max .result-time { color: #FAC775; }
+
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: #444441;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1>Horário de saída</h1>
+  </div>
+
+  <div class="time-input-wrap">
+    <span class="time-label">Hora de entrada</span>
+    <input type="time" id="entrada" placeholder="--:--">
+  </div>
+
+  <div class="results">
+    <div class="result-card card-normal" id="card-normal">
+      <div class="result-info">
+        <div class="result-type">Normal</div>
+        <div class="result-desc">9h30 de jornada</div>
+      </div>
+      <div class="result-time" id="saida-normal">--:--</div>
+    </div>
+
+    <div class="result-card card-max" id="card-max">
+      <div class="result-info">
+        <div class="result-type">Máximo</div>
+        <div class="result-desc">+ 1h30 extra</div>
+      </div>
+      <div class="result-time" id="saida-max">--:--</div>
+    </div>
+  </div>
+
+  <p class="hint">Toque no horário acima para alterar a entrada</p>
+
+</div>
+
+<script>
+  const input = document.getElementById('entrada');
+  const saidaNormal = document.getElementById('saida-normal');
+  const saidaMax = document.getElementById('saida-max');
+  const cardNormal = document.getElementById('card-normal');
+  const cardMax = document.getElementById('card-max');
+
+  function addMinutes(h, m, mins) {
+    const total = h * 60 + m + mins;
+    const hh = Math.floor(total / 60) % 24;
+    const mm = total % 60;
+    return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+  }
+
+  function calcular(val) {
+    if (!val) {
+      saidaNormal.textContent = '--:--';
+      saidaMax.textContent = '--:--';
+      cardNormal.classList.add('empty');
+      cardMax.classList.add('empty');
+      return;
+    }
+    const [h, m] = val.split(':').map(Number);
+    saidaNormal.textContent = addMinutes(h, m, 570); // 9h30 = 570min
+    saidaMax.textContent    = addMinutes(h, m, 660); // 11h  = 660min
+    cardNormal.classList.remove('empty');
+    cardMax.classList.remove('empty');
+  }
+
+  input.addEventListener('input', () => calcular(input.value));
+  input.addEventListener('change', () => calcular(input.value));
+
+  // Set current time as default
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  input.value = `${hh}:${mm}`;
+  calcular(input.value);
+</script>
+</body>
+</html>
