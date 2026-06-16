@@ -171,7 +171,7 @@
     </div>
   </div>
 
-  <p class="hint">Toque no horário acima para alterar a entrada</p>
+  <p class="hint">O horário de entrada é salvo automaticamente</p>
 
 </div>
 
@@ -204,14 +204,25 @@
     cardMax.classList.remove('empty');
   }
 
-  input.addEventListener('input', () => calcular(input.value));
-  input.addEventListener('change', () => calcular(input.value));
+  function salvar(val) {
+    try { localStorage.setItem('entrada', val); } catch(e) {}
+  }
 
-  // Set current time as default
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2,'0');
-  const mm = String(now.getMinutes()).padStart(2,'0');
-  input.value = `${hh}:${mm}`;
+  function carregar() {
+    try { return localStorage.getItem('entrada'); } catch(e) { return null; }
+  }
+
+  input.addEventListener('input', () => { calcular(input.value); salvar(input.value); });
+  input.addEventListener('change', () => { calcular(input.value); salvar(input.value); });
+
+  // Restore last saved time, or use current time
+  const saved = carregar();
+  if (saved) {
+    input.value = saved;
+  } else {
+    const now = new Date();
+    input.value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  }
   calcular(input.value);
 </script>
 </body>
